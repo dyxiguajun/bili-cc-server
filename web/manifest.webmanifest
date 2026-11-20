@@ -1,0 +1,15 @@
+{
+  "name": "Bili CC · B 站字幕提取",
+  "short_name": "Bili CC",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "zh-CN",
+  "display": "standalone",
+  "background_color": "#0b121b",
+  "theme_color": "#111a24",
+  "icons": [
+    {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}

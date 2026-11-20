@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111a24">
+  <title>Bili CC · B 站字幕提取</title>
+  <link rel="icon" href="/static/icon-192.png">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="stylesheet" href="/static/style.css">
+  <script type="module" src="/static/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="Bili CC 首页">
+        <img src="/static/icon-192.png" alt="" width="32" height="32">
+        <span>Bili CC</span>
+      </a>
+      <div class="account">
+        <span id="signed-in" class="account-state" hidden>已登录</span>
+        <button id="login-button" class="secondary" type="button" hidden>登录 B 站</button>
+        <button id="logout-button" class="secondary" type="button" hidden>退出登录</button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <h1>B 站字幕提取</h1>
+    <form id="extract-form" class="panel">
+      <label for="video-url">视频地址</label>
+      <div class="form-row">
+        <input id="video-url" name="video" type="text" placeholder="B 站视频链接、短链接或 BV 号" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="2048" required>
+        <button id="extract-button" type="submit">提取并复制</button>
+      </div>
+      <p id="status" class="status" role="status"></p>
+    </form>
+
+    <section class="panel output" aria-labelledby="subtitle-label">
+      <div id="video-details" class="video-details" hidden>
+        <a id="video-title" target="_blank" rel="noopener noreferrer"></a>
+        <span id="video-part" class="video-part"></span>
+      </div>
+      <div class="output-bar">
+        <h2 id="subtitle-label">字幕</h2>
+        <div class="output-actions">
+          <select id="track" aria-label="字幕语言" hidden></select>
+          <button id="copy-button" class="secondary" type="button" disabled>复制字幕</button>
+          <button id="srt-button" class="secondary" type="button" disabled>下载 SRT</button>
+        </div>
+      </div>
+      <textarea id="subtitle" aria-labelledby="subtitle-label" readonly placeholder="提取后，字幕会显示在这里。"></textarea>
+    </section>
+  </main>
+
+  <footer>XiGua · Corvallis, Oregon, USA · 20261119</footer>
+
+  <dialog id="login-dialog" aria-labelledby="login-title">
+    <div class="dialog-heading">
+      <h2 id="login-title">登录 B 站</h2>
+      <form method="dialog">
+        <button type="submit" class="secondary">关闭</button>
+      </form>
+    </div>
+    <p class="dialog-note">用哔哩哔哩 App 扫码并确认。登录凭据保存在你的 NAS，会话仅在当前浏览器生效。</p>
+    <img id="qr-image" alt="哔哩哔哩登录二维码" width="196" height="196" hidden>
+    <p id="login-status" class="status" role="status"></p>
+    <div id="qr-actions" class="dialog-actions" hidden>
+      <a id="qr-open" target="_blank" rel="noopener noreferrer">在手机打开 B 站登录页</a>
+      <a id="qr-save" download="bilibili-login.png">保存二维码</a>
+    </div>
+    <button id="qr-refresh" class="secondary" type="button" hidden>刷新二维码</button>
+  </dialog>
+</body>
+</html>

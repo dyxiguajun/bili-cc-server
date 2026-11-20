@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Bili CC",
+  "description": "将当前 B 站视频链接带入你自托管的 Bili CC 字幕提取器。",
+  "version": "2.0.0",
+  "author": "XiGua",
+  "permissions": ["activeTab", "storage"],
+  "icons": {"16": "icon-16.png", "32": "icon-32.png", "128": "icon-128.png"},
+  "action": {
+    "default_title": "用 Bili CC 提取字幕",
+    "default_icon": {"16": "icon-16.png", "32": "icon-32.png"}
+  },
+  "background": {"service_worker": "background.js", "type": "module"},
+  "options_ui": {"page": "options.html", "open_in_tab": true}
+}

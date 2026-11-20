@@ -1,0 +1,6 @@
+**
+!bili_cc/
+!bili_cc/*.py
+!web/
+!web/**
+!requirements.txt
