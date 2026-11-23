@@ -1,0 +1,10 @@
+[Unit]
+Description=Bili CC LAN relay to Tailscale Serve
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd --connections-max=24 --exit-idle-time=2min @TAILSCALE_IP@:@HTTPS_PORT@
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

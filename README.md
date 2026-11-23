@@ -13,6 +13,8 @@ XiGua · Corvallis, Oregon, USA · 20261119
 
 Chrome 扩展会读取当前视频页的链接并打开填好地址的字幕网页。桌面 Chrome 打开 `chrome://extensions`，启用开发者模式，选择「加载已解压的扩展程序」，选中 `extension/`。第一次点击扩展图标时，在设置里填写字幕服务的 HTTPS 根地址。扩展使用 `activeTab`，无需读取 B 站 Cookie。
 
+Android 客户端支持从 B 站分享到后台提取并复制，可以配置局域网与 Tailscale 的主用和备用连接。[Android 安装与构建说明](android/README.md)
+
 需要分发已填地址的扩展时运行以下命令。
 
 ```sh

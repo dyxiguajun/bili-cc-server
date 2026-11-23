@@ -1,0 +1,12 @@
+[Unit]
+Description=Bili CC LAN HTTPS listener
+After=network.target
+
+[Socket]
+ListenStream=@LAN_IP@:@HTTPS_PORT@
+BindToDevice=@LAN_INTERFACE@
+FreeBind=yes
+NoDelay=yes
+
+[Install]
+WantedBy=sockets.target

@@ -10,3 +10,12 @@ __pycache__/
 .bili_profile.json
 data/
 dist/
+android/.gradle/
+android/.idea/
+android/**/build/
+android/local.properties
+android/*.local.json
+android/local.routes.json
+*.jks
+*.keystore
+*.p12
