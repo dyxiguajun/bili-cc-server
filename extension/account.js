@@ -1,5 +1,10 @@
+const avatarSource = /^https:\/\/i[0-9]+\.hdslb\.com\/bfs\/face\/(?:[\w-]+\/)*[\w-]+\.(?:jpe?g|png|webp|gif)$/;
+
 export function mountAccount({onPanelChange, onSignedIn}) {
   const button = document.getElementById("account");
+  const loginLabel = document.getElementById("login-label");
+  const placeholder = document.getElementById("account-placeholder");
+  const avatar = document.getElementById("account-avatar");
   const panel = document.getElementById("account-panel");
   const qr = document.getElementById("qr");
   const status = document.getElementById("account-status");
@@ -7,6 +12,7 @@ export function mountAccount({onPanelChange, onSignedIn}) {
   let signedIn = false;
   let timer;
   let revision = 0;
+  let avatarRevision = 0;
 
   async function call(actionName) {
     const reply = await chrome.runtime.sendMessage({target: "account", action: actionName});
@@ -16,9 +22,33 @@ export function mountAccount({onPanelChange, onSignedIn}) {
 
   function setSignedIn(value) {
     signedIn = value;
-    button.textContent = value ? "已登录" : "登录 B 站";
     button.dataset.signedIn = String(value);
+    loginLabel.hidden = value;
+    placeholder.hidden = !value;
+    avatar.hidden = true;
+    avatar.removeAttribute("src");
+    const label = value ? "B 站账号（已登录）" : "点击登录";
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    const current = ++avatarRevision;
+    if (value) void loadAvatar(current);
   }
+
+  async function loadAvatar(current) {
+    try {
+      const {avatar: url} = await call("avatar");
+      if (current !== avatarRevision || typeof url !== "string" || !avatarSource.test(url)) return;
+      avatar.src = url;
+    } catch {
+      // The optional avatar does not change the login state.
+    }
+  }
+
+  avatar.addEventListener("load", () => {
+    if (!signedIn || !avatar.hasAttribute("src")) return;
+    avatar.hidden = false;
+    placeholder.hidden = true;
+  });
 
   function setPanel(open) {
     panel.hidden = !open;

@@ -1,7 +1,7 @@
 name: bili-cc-server
 services:
   app:
-    image: bili-cc-server:2.0.3
+    image: bili-cc-server:2.0.4
     build: .
     init: true
     restart: unless-stopped

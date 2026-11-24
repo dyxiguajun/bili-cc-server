@@ -380,11 +380,30 @@ class Bilibili:
         return {**res, "status": "ok", "selected": chosen, "text": text, "srt": srt}
 
     async def check_session(self, sessdata):
+        return bool(await self.account_info(sessdata))
+
+    async def account_info(self, sessdata):
         _, body = await self.get(API + "/x/web-interface/nav", sessdata=sessdata)
         result = read_json(body)
         if result.get("code") == -101:
-            return False
-        return bool(api_data(result).get("isLogin"))
+            return None
+        data = api_data(result)
+        return data if data.get("isLogin") else None
+
+    async def avatar_url(self, sessdata):
+        account = await self.account_info(sessdata)
+        face = account and account.get("face")
+        if not isinstance(face, str) or len(face) > 512:
+            return None
+        try:
+            parts = valid_url(urljoin(WEB, face), protocols=("http", "https"))
+        except (ServiceError, ValueError):
+            return None
+        if not re.fullmatch(r"i[0-9]+\.hdslb\.com", parts.hostname):
+            return None
+        if not re.fullmatch(r"/bfs/face/(?:[\w-]+/)*[\w-]+\.(?:jpe?g|png|webp|gif)", parts.path, re.ASCII):
+            return None
+        return urlunsplit(("https", parts.hostname, parts.path, "", ""))
 
     async def qr_start(self):
         _, body = await self.get(PASSPORT + "/generate")

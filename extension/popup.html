@@ -8,51 +8,69 @@
 </head>
 <body>
   <header>
-    <select id="target" aria-label="目标字幕语言">
-      <option value="zh">中文</option>
-      <option value="en">英文</option>
-      <option value="ja">日文</option>
-      <option value="">跟随 B 站</option>
-      <optgroup label="检测到的字幕轨" id="tracks" hidden></optgroup>
-    </select>
+    <div class="toolbar-language">
+      <select id="target" aria-label="目标字幕语言">
+        <option value="zh">中文</option>
+        <option value="en">英文</option>
+        <option value="ja">日文</option>
+        <option value="">跟随 B 站</option>
+        <optgroup label="检测到的字幕轨" id="tracks" hidden></optgroup>
+      </select>
+      <button id="refresh" class="icon-button" title="重新读取字幕" aria-label="重新读取字幕" type="button" disabled>⟳</button>
+    </div>
     <div class="controls">
-      <button id="account" type="button" aria-expanded="false" aria-controls="account-panel">登录 B 站</button>
-      <button id="settings" title="设置" aria-label="设置" aria-expanded="false" aria-controls="preferences" type="button">⚙</button>
+      <button id="account" type="button" aria-expanded="false" aria-controls="account-panel">
+        <span id="login-label">点击登录</span>
+        <span id="account-placeholder" aria-hidden="true" hidden></span>
+        <img id="account-avatar" alt="" referrerpolicy="no-referrer" width="28" height="28" hidden>
+      </button>
+      <button id="settings" class="icon-button" title="设置" aria-label="设置" aria-expanded="false" aria-controls="preferences" type="button">⚙︎</button>
     </div>
   </header>
-  <section id="result">
-    <p id="status" role="status">正在检查当前页面…</p>
-    <p id="language" hidden></p>
-    <div id="transcript" hidden>
-      <pre id="preview" tabindex="0" aria-label="字幕预览"></pre>
-      <button id="copy" type="button">复制字幕</button>
-    </div>
-  </section>
   <section id="account-panel" class="panel" aria-label="B 站登录" hidden>
     <p id="account-status" role="status"></p>
     <img id="qr" alt="哔哩哔哩登录二维码" width="178" height="178" hidden>
     <button id="account-action" type="button" hidden>刷新二维码</button>
   </section>
   <form id="preferences" class="panel" hidden>
-    <label for="server">服务器 HTTPS 地址</label>
-    <input id="server" type="url" placeholder="https://nas.example.ts.net:8443/" required>
-    <label for="default-language">默认字幕语言</label>
-    <select id="default-language">
-      <option value="zh">中文</option>
-      <option value="en">英文</option>
-      <option value="ja">日文</option>
-      <option value="">跟随 B 站</option>
-    </select>
-    <label class="check">
-      <input id="auto-copy" type="checkbox" checked>
-      <span>打开扩展时自动复制</span>
-    </label>
-    <label class="check">
-      <input id="timestamps" type="checkbox">
-      <span>复制时附带时间戳</span>
-    </label>
-    <button id="save" type="submit">保存</button>
-    <p id="saved" role="status"></p>
+    <div class="field">
+      <label for="server">服务器 HTTPS 地址</label>
+      <input id="server" type="url" placeholder="https://nas.example.ts.net:8443/" required>
+    </div>
+    <div class="field">
+      <label for="default-language">默认字幕语言</label>
+      <select id="default-language">
+        <option value="zh">中文</option>
+        <option value="en">英文</option>
+        <option value="ja">日文</option>
+        <option value="">跟随 B 站</option>
+      </select>
+    </div>
+    <div class="switches">
+      <label class="switch">
+        <span>打开扩展时自动复制</span>
+        <input id="auto-copy" type="checkbox" role="switch" checked>
+      </label>
+      <label class="switch">
+        <span>包含时间戳</span>
+        <input id="timestamps" type="checkbox" role="switch">
+      </label>
+    </div>
+    <div class="form-actions">
+      <p id="saved" role="status"></p>
+      <button id="save" class="primary" type="submit">保存</button>
+    </div>
   </form>
+  <section id="result">
+    <div class="result-summary">
+      <p id="status" role="status">正在检查当前页面…</p>
+      <p id="language" hidden></p>
+    </div>
+    <div id="transcript" hidden>
+      <h2 id="preview-title">字幕预览</h2>
+      <pre id="preview" tabindex="0" aria-labelledby="preview-title"></pre>
+      <button id="copy" class="primary" type="button">复制字幕</button>
+    </div>
+  </section>
 </body>
 </html>

@@ -29,6 +29,7 @@ const messages = {
 
 const accountPaths = {
   session: "/api/session",
+  avatar: "/api/session/avatar",
   start: "/api/login/start",
   poll: "/api/login/poll",
   logout: "/api/logout",
@@ -61,12 +62,14 @@ async function account(action) {
   const path = Object.hasOwn(accountPaths, action) ? accountPaths[action] : null;
   if (!path) return {error: "不支持的操作。"};
   if (action === "logout") active = undefined;
-  const {ok, data, code} = await requestNas(path, action === "session" ? undefined : {});
+  const readOnly = action === "session" || action === "avatar";
+  const {ok, data, code} = await requestNas(path, readOnly ? undefined : {});
   if (!ok) {
     return {error: code === 403 ? "NAS 尚未开放扩展登录，请检查服务端版本。" : data.message || "暂时无法获取登录状态。"};
   }
   return {
     signedIn: data.signed_in === true,
+    avatar: data.avatar,
     status: data.status,
     image: typeof data.image === "string" && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(data.image) ? data.image : undefined,
     expiresIn: data.expires_in,
@@ -94,7 +97,7 @@ async function extract(request) {
     language: selected?.label || "",
     tracks,
   };
-  const formatted = formatTranscript(data.text, data.srt, timestamps);
+  const formatted = formatTranscript(data.text, data.srt, request.timestamps ?? timestamps);
   if (formatted === null) return {...result, message: "当前字幕缺少时间戳。"};
   if (!autoCopy) return result;
   try {
@@ -135,8 +138,11 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   }
   const language = ["zh", "en", "ja"].includes(message.language) ? message.language : undefined;
   const track = typeof message.track === "string" && /^[0-9]{1,25}$/.test(message.track) ? message.track : undefined;
-  if (message.force === true || active?.video !== video || active.language !== language || active.track !== track) {
-    const request = {video, language: track ? undefined : language, track};
+  const timestamps = typeof message.timestamps === "boolean" ? message.timestamps : undefined;
+  const requestedLanguage = track ? undefined : language;
+  if (message.force === true || active?.video !== video || active.language !== requestedLanguage
+      || active.track !== track || active.timestamps !== timestamps) {
+    const request = {video, language: requestedLanguage, track, timestamps};
     active = request;
     chrome.action.setBadgeText({text: ""});
     request.result = extract(request)

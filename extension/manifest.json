@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bili CC",
   "description": "点击工具栏图标，提取、预览和复制当前 B 站视频的字幕。",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "author": "XiGua",
   "permissions": [
     "activeTab",

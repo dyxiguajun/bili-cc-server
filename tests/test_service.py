@@ -71,6 +71,11 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 json={"code": 0, "data": {"code": 0}},
                 headers={"Set-Cookie": f"SESSDATA={PRIVATE_COOKIE}; Domain=.bilibili.com; Path=/; Max-Age=3600; Secure"},
             )
+        if host == "api.bilibili.com" and path == "/x/web-interface/nav":
+            if credentials != f"SESSDATA={PRIVATE_COOKIE}":
+                return httpx.Response(200, json={"code": -101})
+            face = getattr(self, "avatar", "http://i0.hdslb.com/bfs/face/fixture.jpg?tracking=discard")
+            return httpx.Response(200, json={"code": 0, "data": {"isLogin": True, "face": face, "uname": "测试"}})
         if host == "api.bilibili.com" and path in {"/x/player/v2", "/x/player/wbi/v2"}:
             result = {"need_login_subtitle": True, "cid": request.url.params["cid"]}
             if credentials == f"SESSDATA={PRIVATE_COOKIE}":
@@ -133,6 +138,23 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse((await restarted.get("/api/session")).json()["signed_in"])
         replay = await self.browser(cookies=saved_cookies)
         self.assertFalse((await replay.get("/api/session")).json()["signed_in"])
+
+    async def test_avatar_is_session_scoped_and_filters_upstream_urls(self):
+        browser, other = await self.browser(), await self.browser()
+        await self.log_in(browser)
+        self.assertEqual((await other.get("/api/session/avatar")).json(), {"avatar": None})
+        self.assertEqual(len([call for call in self.calls if call[1] == "/x/web-interface/nav"]), 0)
+        for _ in range(2):
+            response = await browser.get("/api/session/avatar")
+            self.assertEqual(response.json(), {"avatar": "https://i0.hdslb.com/bfs/face/fixture.jpg"})
+            self.assertEqual(response.headers["cache-control"], "no-store")
+        self.assertEqual(len([call for call in self.calls if call[1] == "/x/web-interface/nav"]), 1)
+        await browser.post("/api/logout")
+        self.assertEqual((await browser.get("/api/session/avatar")).json(), {"avatar": None})
+
+        await self.log_in(browser)
+        self.avatar = "https://i0.hdslb.com.example.org/bfs/face/fixture.jpg"
+        self.assertEqual((await browser.get("/api/session/avatar")).json(), {"avatar": None})
 
     async def test_track_selection_and_missing_page(self):
         browser = await self.browser()

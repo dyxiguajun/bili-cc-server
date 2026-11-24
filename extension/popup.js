@@ -9,6 +9,7 @@ const target = get("target");
 const tracks = get("tracks");
 const languageLabel = get("language");
 const settings = get("settings");
+const refresh = get("refresh");
 const form = get("preferences");
 const saved = get("saved");
 const transcript = get("transcript");
@@ -19,6 +20,7 @@ const timestampsField = get("timestamps");
 let video;
 let result;
 let timestamps = false;
+let savedTimestamps = false;
 let revision = 0;
 
 function sizePopup() {
@@ -30,6 +32,7 @@ const account = mountAccount({
     if (open) {
       form.hidden = true;
       settings.setAttribute("aria-expanded", "false");
+      applyTimestamps(savedTimestamps);
     }
     sizePopup();
   },
@@ -41,8 +44,11 @@ settings.addEventListener("click", () => {
   if (open) account.close();
   form.hidden = !open;
   settings.setAttribute("aria-expanded", String(open));
+  if (!open) applyTimestamps(savedTimestamps);
   sizePopup();
 });
+
+timestampsField.addEventListener("change", () => applyTimestamps(timestampsField.checked));
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
@@ -57,18 +63,15 @@ form.addEventListener("submit", async event => {
       saved.textContent = "需要允许扩展连接此服务器。";
       return;
     }
-    await chrome.storage.local.set({
+    const preferences = {
       server: endpoint.href,
       language: get("default-language").value,
       autoCopy: autoCopyField.checked,
       timestamps: timestampsField.checked,
-    });
-    const formatChanged = timestamps !== timestampsField.checked;
-    timestamps = timestampsField.checked;
-    if (formatChanged && result) {
-      renderPreview();
-      showStatus(copyButton.disabled ? "当前字幕缺少时间戳。" : "预览已更新，点「复制字幕」应用。");
-    }
+    };
+    await chrome.storage.local.set(preferences);
+    savedTimestamps = preferences.timestamps;
+    if (form.hidden) applyTimestamps(savedTimestamps);
     get("server").value = endpoint.href;
     saved.textContent = "已保存。";
     void account.refresh();
@@ -102,18 +105,33 @@ function renderPreview() {
   copyButton.disabled = !formatted;
 }
 
+function showFormatStatus() {
+  showStatus(copyButton.disabled ? "当前字幕缺少时间戳。" : "预览已更新");
+}
+
+function applyTimestamps(value) {
+  timestampsField.checked = value;
+  if (timestamps === value) return;
+  timestamps = value;
+  if (result) {
+    renderPreview();
+    showFormatStatus();
+  }
+}
+
 copyButton.addEventListener("click", async () => {
   if (!result) return;
-  const text = formatTranscript(result.text, result.srt, timestamps);
+  const includeTimestamps = timestamps;
+  const text = formatTranscript(result.text, result.srt, includeTimestamps);
   if (!text) return;
   const attempt = revision;
   copyButton.disabled = true;
   try {
     const reply = await chrome.runtime.sendMessage({target: "copy-transcript", text});
-    if (attempt !== revision) return;
+    if (attempt !== revision || includeTimestamps !== timestamps) return;
     showStatus(reply?.copied ? "字幕已复制" : reply?.error || "复制失败，请重试。", reply?.copied);
   } catch {
-    if (attempt === revision) showStatus("复制失败，请重试。");
+    if (attempt === revision && includeTimestamps === timestamps) showStatus("复制失败，请重试。");
   } finally {
     if (attempt === revision) copyButton.disabled = !formatTranscript(result.text, result.srt, timestamps);
   }
@@ -130,14 +148,18 @@ async function run(force = false) {
     return;
   }
   showStatus("正在提取字幕…");
+  const includeTimestamps = timestamps;
   const choice = target.value;
   const selection = choice.startsWith("track:") ? {track: choice.slice(6)} : {language: choice};
   try {
-    const reply = await chrome.runtime.sendMessage({target: "extract", video, force, ...selection});
+    const reply = await chrome.runtime.sendMessage({
+      target: "extract", video, force, timestamps: includeTimestamps, ...selection,
+    });
     if (attempt !== revision) return;
     result = reply.text ? reply : undefined;
     renderPreview();
     showStatus(reply.message, reply.copied);
+    if (result && includeTimestamps !== timestamps) showFormatStatus();
     if (reply.loginRequired) account.requireLogin();
     showTracks(reply.tracks);
     if (reply.language) {
@@ -151,17 +173,45 @@ async function run(force = false) {
 
 target.addEventListener("change", () => run());
 
+async function readVideo(force = false) {
+  let tab;
+  try {
+    [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+  } catch {
+    ++revision;
+    video = result = undefined;
+    renderPreview();
+    languageLabel.hidden = true;
+    target.disabled = true;
+    showStatus("无法读取当前标签页。");
+    return;
+  }
+  const currentVideo = shareableVideo(tab?.url);
+  if (video !== currentVideo) showTracks([]);
+  video = currentVideo;
+  target.disabled = !video;
+  await run(force);
+}
+
+refresh.addEventListener("click", async () => {
+  refresh.disabled = true;
+  try {
+    await readVideo(true);
+  } finally {
+    refresh.disabled = false;
+  }
+});
+
 try {
   const {server = DEFAULT_SERVER, language = "zh", autoCopy = true, timestamps: configuredTimestamps = false} =
     await chrome.storage.local.get(["server", "language", "autoCopy", "timestamps"]);
   autoCopyField.checked = autoCopy;
-  timestampsField.checked = timestamps = configuredTimestamps;
+  timestampsField.checked = savedTimestamps = timestamps = configuredTimestamps;
   get("server").value = server;
   get("default-language").value = target.value = language;
   void account.refresh();
-  const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-  video = shareableVideo(tab?.url);
-  await run();
+  refresh.disabled = false;
+  await readVideo();
 } catch {
   status.textContent = "无法读取当前标签页。";
 }

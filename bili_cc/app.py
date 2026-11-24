@@ -1,5 +1,6 @@
 import asyncio
 import base64
+from collections import OrderedDict
 from contextlib import asynccontextmanager, suppress
 import io
 import json
@@ -7,6 +8,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import time
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -17,7 +19,7 @@ import qrcode
 
 from . import VERSION
 from .bili import Bilibili, ServiceError, http_client
-from .sessions import QR_COOKIE, QR_TTL, SESSION_COOKIE, Sessions
+from .sessions import QR_COOKIE, QR_TTL, SESSION_COOKIE, Sessions, digest
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,6 +30,8 @@ EXTENSION_ORIGIN = "chrome-extension://jpopdalnimaeaeblpammpjheebipbooj"
 EXTENSION_POST_PATHS = {"/api/extract", "/api/login/start", "/api/login/poll", "/api/logout"}
 LOG = logging.getLogger("uvicorn.error")
 COOKIE_FLAGS = {"path": "/", "secure": True, "httponly": True, "samesite": "strict"}
+AVATAR_CACHE_SIZE = 128
+AVATAR_TTL = 300
 
 
 async def purge_expired(sessions):
@@ -82,6 +86,8 @@ def allowed_post(request):
 
 
 def create_app(data_dir=None, transport=None):
+    avatars = OrderedDict()
+
     @asynccontextmanager
     async def lifespan(app):
         os.umask(0o077)
@@ -166,6 +172,29 @@ def create_app(data_dir=None, transport=None):
         credential = app.state.sessions.credential(request.cookies.get(SESSION_COOKIE))
         return {"signed_in": credential is not None}
 
+    @app.get("/api/session/avatar")
+    async def session_avatar(request: Request):
+        token = request.cookies.get(SESSION_COOKIE)
+        credential = app.state.sessions.credential(token)
+        if not credential:
+            return {"avatar": None}
+        key = digest(token)
+        if cached := avatars.get(key):
+            if cached[0] > time.monotonic():
+                return {"avatar": cached[1]}
+            del avatars[key]
+        try:
+            async with asyncio.timeout(4), upstream_slot() as upstream:
+                url = await upstream.avatar_url(credential)
+        except (ServiceError, TimeoutError):
+            return {"avatar": None}
+        if not app.state.sessions.credential(token):
+            return {"avatar": None}
+        avatars[key] = (time.monotonic() + AVATAR_TTL, url)
+        if len(avatars) > AVATAR_CACHE_SIZE:
+            avatars.popitem(last=False)
+        return {"avatar": url}
+
     @app.post("/api/extract")
     async def extract(request: Request):
         link, selected, language = await extract_input(request)
@@ -211,7 +240,9 @@ def create_app(data_dir=None, transport=None):
 
     @app.post("/api/logout")
     async def logout(request: Request):
-        app.state.sessions.clear(request.cookies.get(SESSION_COOKIE), request.cookies.get(QR_COOKIE))
+        token = request.cookies.get(SESSION_COOKIE)
+        app.state.sessions.clear(token, request.cookies.get(QR_COOKIE))
+        avatars.pop(digest(token), None)
         response = JSONResponse({"signed_in": False})
         response.delete_cookie(SESSION_COOKIE, **COOKIE_FLAGS)
         response.delete_cookie(QR_COOKIE, **COOKIE_FLAGS)
