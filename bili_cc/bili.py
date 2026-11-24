@@ -22,7 +22,8 @@ VIDEO_PATH = re.compile(r"/video/(BV[A-Za-z0-9]{10})/?")
 WEB_HOSTS = {"bilibili.com", "www.bilibili.com", "m.bilibili.com"}
 SHORT_HOSTS = {"b23.tv", "bili2233.cn"}
 REDIRECTS = {301, 302, 303, 307, 308}
-MAX_VIDEO_BYTES = 4 * 1024 * 1024
+MAX_VIDEO_BYTES = 8 * 1024 * 1024
+VIDEO_STATE = re.compile(rb"window\.__INITIAL_STATE__\s*=\s*")
 MAX_SUBTITLE_BYTES = 3 * 1024 * 1024
 MAX_API_BYTES = 1024 * 1024
 COOKIE_VALUE = re.compile(r"[A-Za-z0-9%_=.+/\-]{1,1024}")
@@ -129,6 +130,17 @@ def upstream_format():
     return ServiceError(502, "upstream_format", "B 站返回了无法识别的数据，请稍后再试。")
 
 
+def preferred_chinese_track(tracks):
+    candidates = []
+    for track in tracks:
+        raw = track["language"].lower()
+        language = raw.removeprefix("ai-")
+        if language == "zh" or language.startswith("zh-") or language in {"cmn", "yue"}:
+            priority = (language not in {"zh", "zh-cn", "zh-hans", "zh-sg", "cmn"}, raw.startswith("ai-"))
+            candidates.append((priority, track["id"]))
+    return min(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
 def read_json(body):
     try:
         data = json.loads(body)
@@ -191,7 +203,8 @@ class Bilibili:
         self.client = client
         self.api_backoff_until = 0.0
 
-    async def get(self, url, *, params=None, referer=WEB + "/", sessdata=None, limit=MAX_API_BYTES, short=False):
+    async def get(self, url, *, params=None, referer=WEB + "/", sessdata=None, limit=MAX_API_BYTES,
+                  short=False, video_state=False):
         parts = urlsplit(url)
         host = parts.hostname
         if host == "api.bilibili.com" and time.monotonic() < self.api_backoff_until:
@@ -217,10 +230,24 @@ class Bilibili:
                     if status != 200:
                         raise ServiceError(502, "upstream_http", "B 站暂时无法提供该数据，请稍后再试。")
                     body = bytearray()
+                    state_start = None
                     async for chunk in response.aiter_bytes(chunk_size=65_536):
                         body.extend(chunk)
+                        if video_state:
+                            if state_start is None:
+                                marker = VIDEO_STATE.search(body, 0, limit)
+                                if marker:
+                                    state_start = marker.end()
+                            if state_start is not None:
+                                end = body.find(b"</script>", state_start, limit)
+                                if end != -1:
+                                    return response, body[state_start:end]
                         if len(body) > limit:
                             raise ServiceError(502, "upstream_too_large", "B 站返回的数据超过了服务上限。")
+                    if video_state:
+                        if state_start is None:
+                            raise upstream_format()
+                        return response, body[state_start:]
                     return response, body
             except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError):
                 if attempt == 0:
@@ -255,13 +282,9 @@ class Bilibili:
 
     async def video_info(self, video):
         # The watch page supplies metadata even where the legacy view API is unavailable.
-        _, body = await self.get(video.url, limit=MAX_VIDEO_BYTES)
+        _, body = await self.get(video.url, limit=MAX_VIDEO_BYTES, video_state=True)
         try:
-            html = body.decode("utf-8")
-            state = re.search(r"window\.__INITIAL_STATE__\s*=\s*", html)
-            if not state:
-                raise upstream_format()
-            state_data, _ = json.JSONDecoder().raw_decode(html, state.end())
+            state_data, _ = json.JSONDecoder().raw_decode(body.decode("utf-8").lstrip())
             data = state_data.get("videoData") or {}
             if not data:
                 raise ServiceError(404, "video_unavailable", "这个 B 站视频已失效或无法访问。")
@@ -284,25 +307,27 @@ class Bilibili:
         except (AttributeError, IndexError, KeyError, TypeError, ValueError, RecursionError) as exc:
             raise upstream_format() from exc
 
-    async def extract(self, query, selected, sessdata):
+    async def extract(self, query, selected, sessdata, language=None):
         video = await self.resolve(query)
         info = await self.video_info(video)
         error = None
         try:
-            result = await self.fetch_player_subtitle(PLAYER_PATHS[0], video, info, selected, sessdata)
-            if not sessdata or result["status"] not in {"no_subtitle", "track_unavailable"}:
+            result = await self.fetch_player_subtitle(PLAYER_PATHS[0], video, info, selected, sessdata, language)
+            if not sessdata or result["status"] not in {"no_subtitle", "track_unavailable", "no_chinese_subtitle"}:
                 return result
         except ServiceError as exc:
             if exc.code not in RECOVERABLE_SUBTITLE_ERRORS:
                 raise
             error = exc
 
-        retry = await self.fetch_player_subtitle(PLAYER_PATHS[1], video, info, selected, sessdata)
+        retry = await self.fetch_player_subtitle(PLAYER_PATHS[1], video, info, selected, sessdata, language)
         if error and retry["status"] != "ok":
             raise error
+        if not error and result["status"] == "no_chinese_subtitle" and retry["status"] == "no_subtitle":
+            return result
         return retry
 
-    async def fetch_player_subtitle(self, path, video, info, selected, sessdata):
+    async def fetch_player_subtitle(self, path, video, info, selected, sessdata, language):
         _, body = await self.get(
             API + path,
             params={"bvid": info["bvid"], "aid": info["aid"], "cid": info["cid"]},
@@ -335,7 +360,11 @@ class Bilibili:
             return {**res, "status": "no_subtitle"}
         if selected is not None and selected not in urls:
             return {**res, "status": "track_unavailable"}
-        chosen = selected or tracks[0]["id"]
+        chosen = selected
+        if chosen is None:
+            chosen = preferred_chinese_track(tracks) if language == "zh" else tracks[0]["id"]
+        if chosen is None:
+            return {**res, "status": "no_chinese_subtitle"}
         source = subtitle_url(urls[chosen], info["aid"], info["cid"])
         _, body = await self.get(source, referer=video.url, limit=MAX_SUBTITLE_BYTES)
         ai = next(track["language"].startswith("ai-") for track in tracks if track["id"] == chosen)

@@ -53,15 +53,17 @@ async def extract_input(request):
         body = json.loads(collected)
         value = body.get("url")
         track = body.get("track")
+        language = body.get("language")
         if (
             not isinstance(value, str)
             or not 1 <= len(value.strip()) <= 2048
             or (track is not None and (not isinstance(track, str) or not re.fullmatch(r"[0-9]{1,25}", track)))
+            or language not in (None, "zh")
         ):
             raise ValueError
     except (ValueError, AttributeError, RecursionError):
         raise ServiceError(400, "invalid_input", "请输入有效的视频链接、BV 号和字幕轨。") from None
-    return value, track
+    return value, track, language
 
 
 def allowed_post(request):
@@ -162,10 +164,10 @@ def create_app(data_dir=None, transport=None):
 
     @app.post("/api/extract")
     async def extract(request: Request):
-        link, selected = await extract_input(request)
+        link, selected, language = await extract_input(request)
         credential = app.state.sessions.credential(request.cookies.get(SESSION_COOKIE))
         async with upstream_slot() as upstream:
-            return await upstream.extract(link, selected, credential)
+            return await upstream.extract(link, selected, credential, language)
 
     @app.post("/api/login/start")
     async def login_start(request: Request):

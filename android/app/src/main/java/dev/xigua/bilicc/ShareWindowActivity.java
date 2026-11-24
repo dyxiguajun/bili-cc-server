@@ -25,7 +25,8 @@ public final class ShareWindowActivity extends Screen {
         }
         FrameLayout overlay = new FrameLayout(this);
         panel = Ui.panel(this);
-        status = Ui.text(this, "正在提取字幕…", 16, Ui.TEXT, true);
+        status = Ui.text(this, "正在提取中文字幕…", 16, Ui.TEXT, true);
+        status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         actions = Ui.row(this);
         Ui.weight(actions, Ui.button(this, "取消", false, view -> finish()), 0);
         Ui.add(panel, status, 0);
@@ -33,10 +34,8 @@ public final class ShareWindowActivity extends Screen {
         FrameLayout.LayoutParams placement = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
         placement.setMargins(Ui.dp(this, 18), 0, Ui.dp(this, 18), Ui.dp(this, 52));
         overlay.addView(panel, placement);
-        panel.setVisibility(View.INVISIBLE);
         setContentView(overlay);
-        ui.postDelayed(() -> panel.setVisibility(View.VISIBLE), 350);
-        runTask(() -> ShareJobService.requireText(app().api.extract(app().settings.routes(), video, null)),
+        runTask(() -> ShareJobService.requireText(app().api.extractChinese(app().settings.routes(), video)),
                 text -> {
                     pendingCopy = text;
                     if (hasWindowFocus()) copyAndReturn();
@@ -52,9 +51,11 @@ public final class ShareWindowActivity extends Screen {
     private void copyAndReturn() {
         if (pendingCopy == null || isFinishing()) return;
         try {
-            Ui.copy(this, pendingCopy);
+            Ui.copyToClipboard(this, pendingCopy);
             pendingCopy = null;
-            finish();
+            status.setText("中文字幕已复制");
+            actions.setVisibility(View.GONE);
+            ui.postDelayed(this::finish, 1200);
         } catch (Exception error) {
             pendingCopy = null;
             showProblem(error);

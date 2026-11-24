@@ -53,7 +53,10 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                               {"cid": 102, "duration": 30, "part": "二"}],
                 },
             }
-            return httpx.Response(200, text=f"<script>window.__INITIAL_STATE__={json.dumps(metadata)};</script>")
+            page = f"<script>window.__INITIAL_STATE__={json.dumps(metadata)};</script>"
+            if getattr(self, "large_video_page", False):
+                page += "x" * (9 * 1024 * 1024)
+            return httpx.Response(200, text=page)
         if host == "passport.bilibili.com" and path.endswith("/generate"):
             return httpx.Response(200, json={
                 "code": 0,
@@ -81,6 +84,12 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                     {"id_str": "2", "lan": "en", "lan_doc": "English",
                      "subtitle_url": "//aisubtitle.hdslb.com/bfs/subtitle/fixture-en.json?auth=signed"},
                 ]}
+                if getattr(self, "english_first", False):
+                    result["subtitle"]["subtitles"].reverse()
+                if getattr(self, "english_only", False):
+                    result["subtitle"]["subtitles"] = [
+                        track for track in result["subtitle"]["subtitles"] if track["lan"] == "en"
+                    ]
             return httpx.Response(200, json={"code": 0, "data": result})
         if host == "aisubtitle.hdslb.com":
             self.assertEqual(request.url.query, b"auth=signed")
@@ -144,6 +153,19 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.json()["status"], "ok")
         destinations = [path for host, path, _ in self.calls if host == "aisubtitle.hdslb.com"]
         self.assertEqual(destinations, ["/bfs/ai_subtitle/prod/18101" + "a" * 32])
+
+    async def test_share_prefers_chinese_and_ignores_large_page_tail(self):
+        browser = await self.browser()
+        await self.log_in(browser)
+        self.large_video_page = True
+        self.english_first = True
+        request = {"url": "中文标题 https://b23.tv/fixture", "language": "zh"}
+        reply = (await browser.post("/api/extract", json=request)).json()
+        self.assertEqual((reply["selected"], reply["text"]), (TRACK, "第一行\n第二行"))
+        self.english_only = True
+        reply = (await browser.post("/api/extract", json=request)).json()
+        self.assertEqual(reply["status"], "no_chinese_subtitle")
+        self.assertNotIn("text", reply)
 
     async def test_rejects_cross_origin_and_unsupported_links(self):
         browser = await self.browser()

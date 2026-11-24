@@ -25,7 +25,7 @@ public final class ShareJobService extends JobService {
         BiliApp app = BiliApp.from(this);
         task = app.workers.submit(() -> {
             try {
-                BiliClient.Reply reply = app.api.extract(app.settings.routes(), video, null);
+                BiliClient.Reply reply = app.api.extractChinese(app.settings.routes(), video);
                 ui.post(() -> complete(params, reply, null));
             } catch (Exception error) {
                 ui.post(() -> complete(params, null, error));
@@ -57,6 +57,9 @@ public final class ShareJobService extends JobService {
         }
         if ("no_subtitle".equals(status)) {
             throw new BiliClient.Failure(status, "当前分 P 没有可提取的字幕。");
+        }
+        if ("no_chinese_subtitle".equals(status)) {
+            throw new BiliClient.Failure(status, "当前分 P 没有中文字幕。");
         }
         throw new BiliClient.Failure(status, "暂未获取到字幕。");
     }

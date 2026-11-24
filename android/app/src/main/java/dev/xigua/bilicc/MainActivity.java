@@ -164,7 +164,9 @@ public final class MainActivity extends Screen {
         setResultActions(false);
         track.setEnabled(false);
         showStatus("正在连接 NAS…", false);
-        runTask(() -> app().api.extract(app().settings.routes(), video, trackId), reply -> {
+        boolean chinese = trackId == null && getIntent().hasExtra(ShareActivity.LINK);
+        runTask(() -> chinese ? app().api.extractChinese(app().settings.routes(), video)
+                : app().api.extract(app().settings.routes(), video, trackId), reply -> {
             finishRequest();
             resultLink = video;
             display(reply, autoCopy);

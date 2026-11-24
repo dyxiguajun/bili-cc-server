@@ -6,6 +6,12 @@ import static org.junit.Assert.assertNull;
 
 public final class VideoLinksTest {
     @Test
+    public void parsesColorOsShareTextWithEscapedColon() {
+        assertEquals("https://b23.tv/a9Tzl0J", VideoLinks.normalize(
+                "老黄回应内存短缺：这是好事啊｜显卡日报3月8日 https\\://b23.tv/a9Tzl0J"));
+    }
+
+    @Test
     public void shareTextKeepsPartAndDropsTracking() {
         assertEquals("https://www.bilibili.com/video/BV1BbKw6XEWq/?p=2", VideoLinks.normalize(
                 "【视频】 https://m.bilibili.com/video/BV1BbKw6XEWq?foo=bar&p=2&share_token=test。"));

@@ -140,6 +140,11 @@ final class Ui {
     }
 
     static void copy(Context context, String text) throws BiliClient.Failure {
+        copyToClipboard(context, text);
+        toast(context, "字幕已复制");
+    }
+
+    static void copyToClipboard(Context context, String text) throws BiliClient.Failure {
         if (text.isEmpty()) throw new BiliClient.Failure("empty", "没有可以复制的字幕。");
         if (text.length() > 300_000) {
             throw new BiliClient.Failure("clipboard_size", "字幕太长，无法整段复制。可在应用里保存 SRT。");
@@ -150,7 +155,6 @@ final class Ui {
         } catch (RuntimeException failure) {
             throw new BiliClient.Failure("clipboard", "系统未能复制字幕，请在应用中重试。");
         }
-        toast(context, "字幕已复制");
     }
 
     static void openTailscale(Activity activity) {

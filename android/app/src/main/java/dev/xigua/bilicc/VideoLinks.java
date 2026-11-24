@@ -18,7 +18,7 @@ final class VideoLinks {
 
     static String normalize(CharSequence input) {
         if (input == null || input.length() > 16_384) return null;
-        String text = input.toString().trim();
+        String text = input.toString().trim().replace("\\://", "://").replace("\\/", "/");
         if (BV.matcher(text).matches()) return text;
         Matcher candidates = URL.matcher(text);
         while (candidates.find()) {

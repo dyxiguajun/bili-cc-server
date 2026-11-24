@@ -67,6 +67,10 @@ final class BiliClient {
         return call(routes, "/api/extract", body);
     }
 
+    Reply extractChinese(List<RouteStore.Route> routes, String video) throws Failure, JSONException {
+        return call(routes, "/api/extract", new JSONObject().put("url", video).put("language", "zh"));
+    }
+
     Reply call(List<RouteStore.Route> routes, String path, JSONObject post) throws Failure {
         if (routes.isEmpty()) throw new Failure("no_routes", "请先设置一个 NAS 连接。");
         long deadline = SystemClock.elapsedRealtime() + ACTION_TIMEOUT_MS;

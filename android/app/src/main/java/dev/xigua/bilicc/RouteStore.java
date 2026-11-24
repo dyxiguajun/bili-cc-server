@@ -16,6 +16,7 @@ import org.json.JSONObject;
 
 final class RouteStore {
     static final int MAX_ROUTES = 6;
+    private static final String BACKGROUND_OPT_IN = "background_share_opt_in";
 
     static final class Route {
         final String name;
@@ -72,7 +73,7 @@ final class RouteStore {
     }
 
     boolean backgroundShare() {
-        return settings.getBoolean("background_share", true);
+        return settings.getBoolean(BACKGROUND_OPT_IN, false);
     }
 
     boolean save(List<Route> routes, boolean backgroundShare) throws JSONException {
@@ -81,6 +82,6 @@ final class RouteStore {
             list.put(new JSONObject().put("name", route.name).put("url", route.url.toString()).put("ip", route.ip()));
         }
         return settings.edit().putString("routes", list.toString())
-                .putBoolean("background_share", backgroundShare).commit();
+                .putBoolean(BACKGROUND_OPT_IN, backgroundShare).commit();
     }
 }
