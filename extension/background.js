@@ -1,5 +1,6 @@
 import {DEFAULT_SERVER} from "./default-server.js";
 import {serverUrl, shareableVideo} from "./links.js";
+import {formatTranscript} from "./transcript.js";
 
 let creating;
 let active;
@@ -82,16 +83,48 @@ async function extract(request) {
   if (!ok || data.status !== "ok" || !data.text) {
     return {message: messages[data.status] || data.message || "暂时取不到字幕。", tracks};
   }
-  if (active !== request) return {message: "已改为提取另一条视频。"};
-  await copy(data.text);
+  const {autoCopy = true, timestamps = false} = await chrome.storage.local.get(["autoCopy", "timestamps"]);
+  if (active !== request) return {message: "本次提取已结束。"};
+
   const selected = tracks.find(item => item.id === data.selected);
-  return {copied: true, message: "字幕已复制", language: selected?.label || "", tracks};
+  const result = {
+    text: data.text,
+    srt: data.srt,
+    message: "已提取字幕",
+    language: selected?.label || "",
+    tracks,
+  };
+  const formatted = formatTranscript(data.text, data.srt, timestamps);
+  if (formatted === null) return {...result, message: "当前字幕缺少时间戳。"};
+  if (!autoCopy) return result;
+  try {
+    await copy(formatted);
+    return {...result, copied: true, message: "字幕已复制"};
+  } catch {
+    return {...result, message: "自动复制失败，请点击「复制字幕」。"};
+  }
+}
+
+function setBadge(text, color) {
+  chrome.action.setBadgeBackgroundColor({color});
+  chrome.action.setBadgeText({text});
 }
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.url !== chrome.runtime.getURL("popup.html")) return;
   if (message?.target === "account") {
     account(message.action).then(respond, error => respond({error: error.message || "操作失败。"}));
+    return true;
+  }
+  if (message?.target === "copy-transcript") {
+    if (typeof message.text !== "string" || !message.text) {
+      respond({error: "没有可以复制的字幕。"});
+      return;
+    }
+    copy(message.text).then(() => {
+      setBadge("✓", "#087657");
+      respond({copied: true});
+    }, error => respond({error: error.message || "复制失败，请重试。"}));
     return true;
   }
   if (message?.target !== "extract") return;
@@ -110,8 +143,8 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       .catch(error => ({message: error.message || "提取失败，请重试。"}))
       .then(result => {
         if (active === request) {
-          chrome.action.setBadgeBackgroundColor({color: result.copied ? "#087657" : "#a33c4f"});
-          chrome.action.setBadgeText({text: result.copied ? "✓" : "!"});
+          if (result.copied) setBadge("✓", "#087657");
+          else if (!result.text) setBadge("!", "#a33c4f");
           active = undefined;
         }
         return result;

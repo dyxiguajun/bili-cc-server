@@ -23,6 +23,10 @@
   <section id="result">
     <p id="status" role="status">正在检查当前页面…</p>
     <p id="language" hidden></p>
+    <div id="transcript" hidden>
+      <pre id="preview" tabindex="0" aria-label="字幕预览"></pre>
+      <button id="copy" type="button">复制字幕</button>
+    </div>
   </section>
   <section id="account-panel" class="panel" aria-label="B 站登录" hidden>
     <p id="account-status" role="status"></p>
@@ -39,6 +43,14 @@
       <option value="ja">日文</option>
       <option value="">跟随 B 站</option>
     </select>
+    <label class="check">
+      <input id="auto-copy" type="checkbox" checked>
+      <span>打开扩展时自动复制</span>
+    </label>
+    <label class="check">
+      <input id="timestamps" type="checkbox">
+      <span>复制时附带时间戳</span>
+    </label>
     <button id="save" type="submit">保存</button>
     <p id="saved" role="status"></p>
   </form>

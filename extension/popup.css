@@ -6,7 +6,7 @@ button, select, input { font: inherit; min-height: 32px; border: 1px solid #485e
 select, input { box-sizing: border-box; padding: 4px 8px; }
 #target { min-width: 0; }
 .controls { flex-shrink: 0; display: flex; gap: 6px; }
-#account, #account-action { padding-inline: 8px; }
+#account, #account-action, #copy { padding-inline: 8px; }
 #account[data-signed-in="true"] { color: #8bdcf0; }
 button { cursor: pointer; }
 #settings { font-size: 19px; width: 32px; color: #8bdcf0; }
@@ -16,6 +16,25 @@ p { margin: 8px 0 0; line-height: 1.5; overflow-wrap: anywhere; }
 #language, #saved { color: #a9bbca; }
 .panel { display: grid; gap: 7px; margin-top: 13px; padding-top: 12px; border-top: 1px solid #374b60; }
 form label:not(:first-child) { margin-top: 4px; }
+.check { display: flex; align-items: center; gap: 8px; }
+.check input { accent-color: #8bdcf0; min-height: 0; width: 16px; height: 16px; margin: 0; }
+#transcript { display: grid; gap: 8px; margin-top: 9px; }
+#preview {
+  max-height: 148px;
+  margin: 0;
+  padding: 8px 9px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #374b60;
+  border-radius: 7px;
+  background: #0d1620;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.5;
+}
+#copy { justify-self: start; }
+button:disabled { cursor: default; opacity: .55; }
 #save { justify-self: start; padding-inline: 12px; margin-top: 3px; background: #8bdcf0; color: #08212c; }
 #saved { margin: 0; }
 #saved:empty, [hidden] { display: none !important; }
@@ -24,7 +43,8 @@ form label:not(:first-child) { margin-top: 4px; }
 #qr { justify-self: center; margin: 4px 0; background: white; border-radius: 7px; }
 #account-action { justify-self: start; }
 @media (prefers-reduced-motion: no-preference) {
-  .panel:not([hidden]) { animation: panel-in 140ms ease-out both; }
+  .panel:not([hidden]), #transcript:not([hidden]) { animation: panel-in 140ms ease-out both; }
+  #status[data-copied] { animation: panel-in 160ms ease-out both; }
   @keyframes panel-in {
     from { opacity: 0; transform: translateY(-3px); }
     to { opacity: 1; transform: none; }
