@@ -82,8 +82,8 @@ public final class SettingsActivity extends Screen {
         background.setEnabled(Build.VERSION.SDK_INT >= 31);
         Ui.add(mode, background, 0);
         Ui.add(mode, Ui.text(this, Build.VERSION.SDK_INT >= 31
-                ? "若系统限制后台任务或剪贴板，关闭此项可使用兼容弹层。"
-                : "此 Android 版本的分享会使用兼容弹层。", 14, Ui.MUTED, false), 5);
+                ? "若系统限制后台任务或剪贴板，关闭此项可使用前台兼容模式。"
+                : "此 Android 版本的分享使用前台兼容模式。", 14, Ui.MUTED, false), 5);
         Ui.add(page, mode, 12);
         Ui.add(page, Ui.button(this, "打开 Tailscale", false, view -> Ui.openTailscale(this)), 10);
         showCards();

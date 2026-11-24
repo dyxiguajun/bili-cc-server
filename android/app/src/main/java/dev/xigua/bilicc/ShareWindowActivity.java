@@ -1,77 +1,75 @@
 package dev.xigua.bilicc;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.Gravity;
-import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.Toast;
 
 public final class ShareWindowActivity extends Screen {
-    private String video;
-    private String pendingCopy;
-    private TextView status;
-    private LinearLayout actions;
-    private LinearLayout panel;
+    private Toast progress;
+    private Runnable pendingResult;
+    private final Runnable showProgress = () -> {
+        if (!hasWindowFocus() || isFinishing()) return;
+        progress = Toast.makeText(this, "正在提取中文字幕…", Toast.LENGTH_SHORT);
+        progress.show();
+    };
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        video = VideoLinks.normalize(getIntent().getStringExtra(ShareActivity.LINK));
+        String video = VideoLinks.normalize(getIntent().getStringExtra(ShareActivity.LINK));
         if (video == null) {
             finish();
             return;
         }
-        FrameLayout overlay = new FrameLayout(this);
-        panel = Ui.panel(this);
-        status = Ui.text(this, "正在提取中文字幕…", 16, Ui.TEXT, true);
-        status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        actions = Ui.row(this);
-        Ui.weight(actions, Ui.button(this, "取消", false, view -> finish()), 0);
-        Ui.add(panel, status, 0);
-        Ui.add(panel, actions, 6);
-        FrameLayout.LayoutParams placement = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
-        placement.setMargins(Ui.dp(this, 18), 0, Ui.dp(this, 18), Ui.dp(this, 52));
-        overlay.addView(panel, placement);
-        setContentView(overlay);
+        ui.postDelayed(showProgress, 650);
         runTask(() -> ShareJobService.requireText(app().api.extractChinese(app().settings.routes(), video)),
-                text -> {
-                    pendingCopy = text;
-                    if (hasWindowFocus()) copyAndReturn();
-                }, this::showProblem);
+                text -> whenFocused(() -> copyAndReturn(text)),
+                error -> whenFocused(() -> notifyAndFinish(Ui.message(error))));
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) copyAndReturn();
+        if (hasFocus) deliverResult();
     }
 
-    private void copyAndReturn() {
-        if (pendingCopy == null || isFinishing()) return;
+    private void whenFocused(Runnable result) {
+        pendingResult = result;
+        deliverResult();
+    }
+
+    private void deliverResult() {
+        if (pendingResult == null || !hasWindowFocus() || isFinishing()) return;
+        Runnable result = pendingResult;
+        pendingResult = null;
+        result.run();
+    }
+
+    private void copyAndReturn(String text) {
         try {
-            Ui.copyToClipboard(this, pendingCopy);
-            pendingCopy = null;
-            status.setText("中文字幕已复制");
-            actions.setVisibility(View.GONE);
-            ui.postDelayed(this::finish, 1200);
-        } catch (Exception error) {
-            pendingCopy = null;
-            showProblem(error);
+            Ui.copyToClipboard(this, text);
+            notifyAndFinish("中文字幕已复制");
+        } catch (BiliClient.Failure error) {
+            notifyAndFinish(Ui.message(error));
         }
     }
 
-    private void showProblem(Exception error) {
-        panel.setVisibility(View.VISIBLE);
-        status.setText(Ui.message(error));
-        actions.removeAllViews();
-        boolean login = error instanceof BiliClient.Failure && ((BiliClient.Failure) error).code.equals("login_required");
-        Ui.weight(actions, Ui.button(this, login ? "去登录" : "打开 Bili CC", true, view -> {
-            startActivity(new Intent(this, MainActivity.class).putExtra(ShareActivity.LINK, video)
-                    .putExtra(MainActivity.OPEN_LOGIN, login));
-            finish();
-        }), 0);
-        Ui.weight(actions, Ui.button(this, "关闭", false, view -> finish()), 7);
+    private void notifyAndFinish(String message) {
+        cancelProgress();
+        Ui.toast(this, message);
+        ui.postDelayed(this::finish, 350);
+    }
+
+    private void cancelProgress() {
+        ui.removeCallbacks(showProgress);
+        if (progress != null) {
+            progress.cancel();
+            progress = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancelProgress();
+        super.onDestroy();
     }
 }

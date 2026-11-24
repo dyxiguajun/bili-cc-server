@@ -8,7 +8,7 @@ Android 客户端使用现有 Bili CC Server 的 HTTPS 接口。支持手动提�
 2. 如果目标视频需要登录，在 App 内打开「B 站登录」，用哔哩哔哩 App 扫码并确认。使用一台手机时，可以保存二维码，再从 B 站扫码页的相册选项读取。也可以用另一台设备显示二维码。
 3. 在哔哩哔哩视频页点「分享 → 更多 → Bili CC 字幕」。有可用的中文字幕时，App 会优先选择简体并复制，随后显示「中文字幕已复制」。
 
-分享默认显示短暂弹层，用于展示提取进度和结果。Android 12 及以上可在「连接设置」手动打开「分享后后台提取」。ColorOS 可能屏蔽后台提示。[Android 分享入口](https://developer.android.com/training/sharing/receive) · [Android 加急任务](https://developer.android.com/reference/android/app/job/JobInfo.Builder#setExpedited(boolean))
+分享使用 Android 原生 Toast 显示提取进度和结果。Android 12 及以上可在「连接设置」手动打开「分享后后台提取」。ColorOS 可能屏蔽后台提示。[Android 分享入口](https://developer.android.com/training/sharing/receive) · [Android 加急任务](https://developer.android.com/reference/android/app/job/JobInfo.Builder#setExpedited(boolean))
 
 ## 连接设置
 

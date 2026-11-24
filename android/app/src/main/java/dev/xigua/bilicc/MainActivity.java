@@ -19,7 +19,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class MainActivity extends Screen {
-    static final String OPEN_LOGIN = "bili_open_login";
     private static final int LOGIN = 10;
     private static final int SAVE = 11;
     private EditText input;
@@ -130,7 +129,6 @@ public final class MainActivity extends Screen {
         String video = VideoLinks.normalize(intent.getStringExtra(ShareActivity.LINK));
         if (video == null) return;
         input.setText(video);
-        if (intent.getBooleanExtra(OPEN_LOGIN, false)) openLogin(true);
     }
 
     private void openLogin(boolean retry) {

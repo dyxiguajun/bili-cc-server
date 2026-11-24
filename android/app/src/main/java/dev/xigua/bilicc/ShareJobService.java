@@ -18,7 +18,7 @@ public final class ShareJobService extends JobService {
         String video = params.getTransientExtras().getString(ShareActivity.LINK);
         if (video == null || received == 0) return false;
         if (SystemClock.elapsedRealtime() - received > 8_000) {
-            Ui.toast(this, "后台提取未及时启动。可在设置中使用兼容窗口。");
+            Ui.toast(this, "后台提取未及时启动。可关闭「分享后后台提取」重试。");
             return false;
         }
         active = params;
