@@ -190,7 +190,25 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(reply["text"].startswith("First line"))
         missing = await browser.post("/api/extract", json={**payload, "language": "ja"}, headers=headers)
         self.assertEqual(missing.json()["status"], "no_language_subtitle")
-        self.assertEqual((await browser.post("/api/logout", headers=headers)).status_code, 403)
+        self.assertEqual((await browser.post("/api/unrelated", headers=headers)).status_code, 403)
         headers["Origin"] = "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         blocked = await browser.post("/api/extract", json=payload, headers=headers)
         self.assertEqual(blocked.status_code, 403)
+
+    async def test_extension_qr_keeps_credentials_in_server_session(self):
+        browser, other = await self.browser(), await self.browser()
+        headers = {"Origin": EXTENSION_ORIGIN, "Sec-Fetch-Site": "cross-site"}
+        denied = await browser.post("/api/login/start", headers={**headers, "Origin": "https://example.invalid"})
+        self.assertEqual(denied.status_code, 403)
+        start = await browser.post("/api/login/start", headers=headers)
+        self.assertEqual(start.status_code, 200)
+        self.assertIn("HttpOnly", start.headers["set-cookie"])
+        self.assertIn("SameSite=strict", start.headers["set-cookie"])
+        self.assertEqual((await other.post("/api/login/poll", headers=headers)).json()["status"], "expired")
+        poll = await browser.post("/api/login/poll", headers=headers)
+        self.assertEqual(poll.json(), {"status": "signed_in"})
+        self.assertIn("Secure", poll.headers["set-cookie"])
+        self.assertNotIn(PRIVATE_COOKIE, poll.text + str(poll.headers))
+        self.assertTrue((await browser.get("/api/session")).json()["signed_in"])
+        self.assertEqual((await browser.post("/api/logout", headers=headers)).json(), {"signed_in": False})
+        self.assertFalse((await browser.get("/api/session")).json()["signed_in"])

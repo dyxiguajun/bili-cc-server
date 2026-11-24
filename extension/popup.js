@@ -1,5 +1,6 @@
 import {DEFAULT_SERVER} from "./default-server.js";
 import {serverUrl, shareableVideo} from "./links.js";
+import {mountAccount} from "./account.js";
 
 const get = id => document.getElementById(id);
 const status = get("status");
@@ -12,10 +13,27 @@ const saved = get("saved");
 let video;
 let revision = 0;
 
+function sizePopup() {
+  document.body.classList.toggle("expanded", !form.hidden || !get("account-panel").hidden);
+}
+
+const account = mountAccount({
+  onPanelChange(open) {
+    if (open) {
+      form.hidden = true;
+      settings.setAttribute("aria-expanded", "false");
+    }
+    sizePopup();
+  },
+  onSignedIn: () => run(true),
+});
+
 settings.addEventListener("click", () => {
-  form.hidden = !form.hidden;
-  document.body.classList.toggle("expanded", !form.hidden);
-  settings.setAttribute("aria-expanded", String(!form.hidden));
+  const open = form.hidden;
+  if (open) account.close();
+  form.hidden = !open;
+  settings.setAttribute("aria-expanded", String(open));
+  sizePopup();
 });
 
 form.addEventListener("submit", async event => {
@@ -34,6 +52,7 @@ form.addEventListener("submit", async event => {
     await chrome.storage.local.set({server: endpoint.href, language: get("default-language").value});
     get("server").value = endpoint.href;
     saved.textContent = "已保存。";
+    void account.refresh();
   } catch {
     saved.textContent = "无法保存设置，请重试。";
   }
@@ -50,7 +69,7 @@ function showTracks(detected) {
   if ([...target.options].some(option => option.value === current)) target.value = current;
 }
 
-async function run() {
+async function run(force = false) {
   const attempt = ++revision;
   delete status.dataset.copied;
   languageLabel.hidden = true;
@@ -63,9 +82,10 @@ async function run() {
   const choice = target.value;
   const selection = choice.startsWith("track:") ? {track: choice.slice(6)} : {language: choice};
   try {
-    const result = await chrome.runtime.sendMessage({target: "extract", video, ...selection});
+    const result = await chrome.runtime.sendMessage({target: "extract", video, force, ...selection});
     if (attempt !== revision) return;
     status.textContent = result.message;
+    if (result.loginRequired) account.requireLogin();
     showTracks(result.tracks);
     if (result.copied) status.dataset.copied = "";
     if (result.language) {
@@ -77,12 +97,13 @@ async function run() {
   }
 }
 
-target.addEventListener("change", run);
+target.addEventListener("change", () => run());
 
 try {
   const {server = DEFAULT_SERVER, language = "zh"} = await chrome.storage.local.get(["server", "language"]);
   get("server").value = server;
   get("default-language").value = target.value = language;
+  void account.refresh();
   const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
   video = shareableVideo(tab?.url);
   await run();

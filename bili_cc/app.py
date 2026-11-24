@@ -25,6 +25,7 @@ STATIC = ROOT / "web"
 MAX_REQUEST_BYTES = 8192
 POST_HEADER = "x-bili-client"
 EXTENSION_ORIGIN = "chrome-extension://jpopdalnimaeaeblpammpjheebipbooj"
+EXTENSION_POST_PATHS = {"/api/extract", "/api/login/start", "/api/login/poll", "/api/logout"}
 LOG = logging.getLogger("uvicorn.error")
 COOKIE_FLAGS = {"path": "/", "secure": True, "httponly": True, "samesite": "strict"}
 
@@ -72,7 +73,7 @@ def allowed_post(request):
         return False
     origin = request.headers.get("origin")
     if origin == EXTENSION_ORIGIN:
-        return request.url.path == "/api/extract"
+        return request.url.path in EXTENSION_POST_PATHS
     host = request.headers.get("host", "")
     allowed = {f"https://{host}"}
     if host.split(":")[0] in {"localhost", "127.0.0.1"}:

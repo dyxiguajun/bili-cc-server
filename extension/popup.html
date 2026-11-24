@@ -15,13 +15,21 @@
       <option value="">跟随 B 站</option>
       <optgroup label="检测到的字幕轨" id="tracks" hidden></optgroup>
     </select>
-    <button id="settings" title="设置" aria-label="设置" aria-expanded="false" aria-controls="preferences" type="button">⚙</button>
+    <div class="controls">
+      <button id="account" type="button" aria-expanded="false" aria-controls="account-panel">登录 B 站</button>
+      <button id="settings" title="设置" aria-label="设置" aria-expanded="false" aria-controls="preferences" type="button">⚙</button>
+    </div>
   </header>
   <section id="result">
     <p id="status" role="status">正在检查当前页面…</p>
     <p id="language" hidden></p>
   </section>
-  <form id="preferences" hidden>
+  <section id="account-panel" class="panel" aria-label="B 站登录" hidden>
+    <p id="account-status" role="status"></p>
+    <img id="qr" alt="哔哩哔哩登录二维码" width="178" height="178" hidden>
+    <button id="account-action" type="button" hidden>刷新二维码</button>
+  </section>
+  <form id="preferences" class="panel" hidden>
     <label for="server">服务器 HTTPS 地址</label>
     <input id="server" type="url" placeholder="https://nas.example.ts.net:8443/" required>
     <label for="default-language">默认字幕语言</label>
