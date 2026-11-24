@@ -1,15 +1,35 @@
 {
   "manifest_version": 3,
   "name": "Bili CC",
-  "description": "将当前 B 站视频链接带入你自托管的 Bili CC 字幕提取器。",
-  "version": "2.0.0",
+  "description": "点击工具栏图标，自动提取并复制当前 B 站视频的字幕。",
+  "version": "2.1.0",
   "author": "XiGua",
-  "permissions": ["activeTab", "storage"],
-  "icons": {"16": "icon-16.png", "32": "icon-32.png", "128": "icon-128.png"},
+  "permissions": [
+    "activeTab",
+    "storage",
+    "clipboardWrite",
+    "offscreen"
+  ],
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "128": "icon-128.png"
+  },
   "action": {
     "default_title": "用 Bili CC 提取字幕",
-    "default_icon": {"16": "icon-16.png", "32": "icon-32.png"}
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png"
+    },
+    "default_popup": "popup.html"
   },
-  "background": {"service_worker": "background.js", "type": "module"},
-  "options_ui": {"page": "options.html", "open_in_tab": true}
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6wHOZzcdUYdJOSibfPTpHChiRNepyvynATt6N2Vtgq4jy6wGzMdu5kWtk82nKEYR7cPDgaFtnXJpvQkprxTS3Z4kBnhRreI0gI/tqnggBj9+mIUzLE5c/8zaqy366Nof/F5+0Gel/zgYQ9mOx1L9PjO0B218Fh9J485iSqTEy2ReqJWWon1kJce5zK41F1MaSAadk+3uTwSS104/0cYUiNfETAmA0g17GJzwcAT4R/UjNE/DwmGCP+OYC68tNstNhPFXfLNEoG9oT+q9zIwIRx6RubQGmBmUtat2lwb8L9+EEgzr8vBHZTOhgev8S+knTy9AeLRAflILRXXlzx7GQIDAQAB",
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
+  "minimum_chrome_version": "116"
 }

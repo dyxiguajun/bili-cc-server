@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Bili CC</title>
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.js"></script>
+</head>
+<body>
+  <header>
+    <select id="target" aria-label="目标字幕语言">
+      <option value="zh">中文</option>
+      <option value="en">英文</option>
+      <option value="ja">日文</option>
+      <option value="">跟随 B 站</option>
+      <optgroup label="检测到的字幕轨" id="tracks" hidden></optgroup>
+    </select>
+    <button id="settings" title="设置" aria-label="设置" aria-expanded="false" aria-controls="preferences" type="button">⚙</button>
+  </header>
+  <section id="result">
+    <p id="status" role="status">正在检查当前页面…</p>
+    <p id="language" hidden></p>
+  </section>
+  <form id="preferences" hidden>
+    <label for="server">服务器 HTTPS 地址</label>
+    <input id="server" type="url" placeholder="https://nas.example.ts.net:8443/" required>
+    <label for="default-language">默认字幕语言</label>
+    <select id="default-language">
+      <option value="zh">中文</option>
+      <option value="en">英文</option>
+      <option value="ja">日文</option>
+      <option value="">跟随 B 站</option>
+    </select>
+    <button id="save" type="submit">保存</button>
+    <p id="saved" role="status"></p>
+  </form>
+</body>
+</html>

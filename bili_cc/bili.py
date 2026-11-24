@@ -313,7 +313,7 @@ class Bilibili:
         error = None
         try:
             result = await self.fetch_player_subtitle(PLAYER_PATHS[0], video, info, selected, sessdata, language)
-            if not sessdata or result["status"] not in {"no_subtitle", "track_unavailable", "no_chinese_subtitle"}:
+            if not sessdata or result["status"] not in {"no_subtitle", "track_unavailable", "no_chinese_subtitle", "no_language_subtitle"}:
                 return result
         except ServiceError as exc:
             if exc.code not in RECOVERABLE_SUBTITLE_ERRORS:
@@ -323,7 +323,7 @@ class Bilibili:
         retry = await self.fetch_player_subtitle(PLAYER_PATHS[1], video, info, selected, sessdata, language)
         if error and retry["status"] != "ok":
             raise error
-        if not error and result["status"] == "no_chinese_subtitle" and retry["status"] == "no_subtitle":
+        if not error and result["status"] in {"no_chinese_subtitle", "no_language_subtitle"} and retry["status"] == "no_subtitle":
             return result
         return retry
 
@@ -362,9 +362,15 @@ class Bilibili:
             return {**res, "status": "track_unavailable"}
         chosen = selected
         if chosen is None:
-            chosen = preferred_chinese_track(tracks) if language == "zh" else tracks[0]["id"]
+            if language == "zh":
+                chosen = preferred_chinese_track(tracks)
+            elif language:
+                chosen = next((track["id"] for track in tracks
+                               if track["language"].lower().removeprefix("ai-").split("-")[0] == language), None)
+            else:
+                chosen = tracks[0]["id"]
         if chosen is None:
-            return {**res, "status": "no_chinese_subtitle"}
+            return {**res, "status": "no_chinese_subtitle" if language == "zh" else "no_language_subtitle"}
         source = subtitle_url(urls[chosen], info["aid"], info["cid"])
         _, body = await self.get(source, referer=video.url, limit=MAX_SUBTITLE_BYTES)
         ai = next(track["language"].startswith("ai-") for track in tracks if track["id"] == chosen)

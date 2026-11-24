@@ -6,7 +6,7 @@ import unittest
 
 import httpx
 
-from bili_cc.app import create_app
+from bili_cc.app import EXTENSION_ORIGIN, create_app
 
 
 BV = "BV1BbKw6XEWq"
@@ -179,3 +179,18 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         bad_redirect = await browser.post("/api/extract", json={"url": "https://b23.tv/other"})
         self.assertEqual(bad_redirect.status_code, 400)
         self.assertEqual(self.calls, [("b23.tv", "/other", None)])
+
+    async def test_only_bili_cc_extension_can_request_its_language(self):
+        browser = await self.browser()
+        await self.log_in(browser)
+        payload = {"url": BV, "language": "en"}
+        headers = {"Origin": EXTENSION_ORIGIN, "Sec-Fetch-Site": "cross-site"}
+        reply = (await browser.post("/api/extract", json=payload, headers=headers)).json()
+        self.assertEqual(reply["selected"], "2")
+        self.assertTrue(reply["text"].startswith("First line"))
+        missing = await browser.post("/api/extract", json={**payload, "language": "ja"}, headers=headers)
+        self.assertEqual(missing.json()["status"], "no_language_subtitle")
+        self.assertEqual((await browser.post("/api/logout", headers=headers)).status_code, 403)
+        headers["Origin"] = "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        blocked = await browser.post("/api/extract", json=payload, headers=headers)
+        self.assertEqual(blocked.status_code, 403)
