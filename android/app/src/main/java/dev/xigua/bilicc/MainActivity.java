@@ -30,6 +30,7 @@ public final class MainActivity extends Screen {
     private Button track;
     private Button save;
     private Button copy;
+    private static final String EMPTY_PREVIEW = "提取后的字幕会显示在这里。";
     private BiliClient.Reply result;
     private String resultLink;
     private boolean retryOnLogin;
@@ -70,17 +71,19 @@ public final class MainActivity extends Screen {
 
     private void buildView() {
         LinearLayout page = Ui.page(this);
-        Ui.add(page, Ui.text(this, "B 站字幕提取", 28, Ui.TEXT, true), 0);
-        connections = Ui.text(this, "", 14, Ui.MUTED, false);
-        Ui.add(page, connections, 5);
+        LinearLayout toolbar = Ui.row(this);
+        Ui.weight(toolbar, Ui.brand(this), 0);
+        toolbar.addView(Ui.quiet(this, "B 站登录", view -> openLogin(false)));
+        Button settings = Ui.quiet(this, "设置", view -> openSettings());
+        settings.setContentDescription("连接设置");
+        toolbar.addView(settings);
+        Ui.add(page, toolbar, 0);
 
-        LinearLayout tools = Ui.row(this);
-        Ui.weight(tools, Ui.button(this, "B 站登录", false, view -> openLogin(false)), 0);
-        Ui.weight(tools, Ui.button(this, "连接设置", false, view -> openSettings()), 8);
-        Ui.add(page, tools, 10);
+        Ui.add(page, Ui.heading(this, "B 站字幕提取", 30), 18);
+        connections = Ui.text(this, "", 14, Ui.MUTED, false);
+        Ui.add(page, connections, 4);
 
         LinearLayout form = Ui.panel(this);
-        Ui.add(form, Ui.text(this, "视频地址", 16, Ui.TEXT, true), 0);
         input = Ui.field(this, "B 站链接、短链接或 BV 号", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(16_384)});
         input.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
@@ -89,17 +92,17 @@ public final class MainActivity extends Screen {
             submit(null, true);
             return true;
         });
-        Ui.add(form, input, 9);
+        Ui.labeledField(form, "视频链接", input, 0);
         extract = Ui.button(this, "提取并复制", true, view -> submit(null, true));
         Ui.add(form, extract, 8);
         status = Ui.text(this, "", 15, Ui.MUTED, false);
         status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         status.setVisibility(View.GONE);
         Ui.add(form, status, 8);
-        Ui.add(page, form, 10);
+        Ui.add(page, form, 16);
 
         LinearLayout output = Ui.panel(this);
-        Ui.add(output, Ui.text(this, "字幕", 19, Ui.TEXT, true), 0);
+        Ui.add(output, Ui.heading(this, "字幕预览", 19), 0);
         title = Ui.text(this, "", 15, Ui.ACCENT, true);
         title.setVisibility(View.GONE);
         Ui.add(output, title, 7);
@@ -107,18 +110,19 @@ public final class MainActivity extends Screen {
         track = Ui.button(this, "切换字幕轨", false, view -> chooseTrack());
         track.setVisibility(View.GONE);
         copy = Ui.button(this, "复制字幕", false, view -> copyResult());
-        save = Ui.button(this, "下载 SRT", false, view -> chooseDestination());
-        Ui.weight(buttons, copy, 0);
-        Ui.weight(buttons, save, 8);
+        save = Ui.quiet(this, "下载 SRT", view -> chooseDestination());
+        Ui.weight(buttons, save, 0);
+        Ui.weight(buttons, copy, 8);
         Ui.add(output, track, 7);
         Ui.add(output, buttons, 6);
-        subtitle = Ui.text(this, "提取后，字幕会显示在这里。", 16, Ui.MUTED, false);
+        subtitle = Ui.text(this, EMPTY_PREVIEW, 16, Ui.MUTED, false);
         subtitle.setTextIsSelectable(true);
-        subtitle.setLineSpacing(Ui.dp(this, 3), 1f);
-        subtitle.setMinHeight(Ui.dp(this, 180));
+        subtitle.setLineSpacing(Ui.dp(this, 4), 1f);
+        subtitle.setMinHeight(Ui.dp(this, 132));
         int padding = Ui.dp(this, 12);
         subtitle.setPadding(padding, padding, padding, padding);
-        subtitle.setBackground(Ui.panelBackground(this, Ui.FIELD));
+        subtitle.setBackground(Ui.readingBackground(this));
+        subtitle.setGravity(android.view.Gravity.CENTER);
         Ui.add(output, subtitle, 8);
         Ui.add(page, output, 12);
         Ui.add(page, Ui.text(this, "XiGua · Corvallis, Oregon, USA", 13, Ui.MUTED, false), 14);
@@ -157,7 +161,8 @@ public final class MainActivity extends Screen {
             title.setVisibility(View.GONE);
             track.setVisibility(View.GONE);
             subtitle.setText("正在提取…");
-            subtitle.setTextColor(Ui.MUTED);
+            subtitle.setTextColor(getColor(Ui.MUTED));
+            subtitle.setGravity(android.view.Gravity.CENTER);
         }
         setResultActions(false);
         track.setEnabled(false);
@@ -178,7 +183,7 @@ public final class MainActivity extends Screen {
         extract.setEnabled(true);
         track.setEnabled(true);
         setResultActions(result != null && "ok".equals(result.data.optString("status")));
-        if (result == null) subtitle.setText("提取后，字幕会显示在这里。");
+        if (result == null) subtitle.setText(EMPTY_PREVIEW);
     }
 
     private void display(BiliClient.Reply reply, boolean autoCopy) {
@@ -194,13 +199,15 @@ public final class MainActivity extends Screen {
         try {
             String text = ShareJobService.requireText(reply);
             subtitle.setText(text);
-            subtitle.setTextColor(Ui.TEXT);
+            subtitle.setTextColor(getColor(Ui.TEXT));
+            subtitle.setGravity(android.view.Gravity.START | android.view.Gravity.TOP);
             setResultActions(true);
-            showStatus("已提取字幕 · " + reply.route.name, false);
+            showSuccess("已提取字幕 · " + reply.route.name);
             if (autoCopy) copyResult();
         } catch (BiliClient.Failure error) {
-            subtitle.setText("提取后，字幕会显示在这里。");
-            subtitle.setTextColor(Ui.MUTED);
+            subtitle.setText("当前没有可预览的字幕。");
+            subtitle.setTextColor(getColor(Ui.MUTED));
+            subtitle.setGravity(android.view.Gravity.CENTER);
             setResultActions(false);
             processFailure(error);
         }
@@ -241,7 +248,7 @@ public final class MainActivity extends Screen {
         if (result == null) return;
         try {
             Ui.copy(this, ShareJobService.requireText(result));
-            showStatus("字幕已复制 · " + result.route.name, false);
+            showSuccess("字幕已复制 · " + result.route.name);
         } catch (Exception failure) {
             showStatus(Ui.message(failure), true);
         }
@@ -264,7 +271,13 @@ public final class MainActivity extends Screen {
 
     private void showStatus(String value, boolean error) {
         status.setVisibility(View.VISIBLE);
-        status.setTextColor(error ? Ui.ERROR : Ui.MUTED);
+        status.setTextColor(getColor(error ? Ui.ERROR : Ui.MUTED));
+        status.setText(value);
+    }
+
+    private void showSuccess(String value) {
+        status.setVisibility(View.VISIBLE);
+        status.setTextColor(getColor(Ui.SUCCESS));
         status.setText(value);
     }
 

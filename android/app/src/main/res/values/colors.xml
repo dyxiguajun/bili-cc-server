@@ -1,0 +1,16 @@
+<resources>
+    <color name="bili_canvas">#F6F4FA</color>
+    <color name="bili_surface">#FFFFFF</color>
+    <color name="bili_well">#F9F7FC</color>
+    <color name="bili_ink">#231B2C</color>
+    <color name="bili_muted">#62576D</color>
+    <color name="bili_line">#E6DEED</color>
+    <color name="bili_control">#8B7C99</color>
+    <color name="bili_accent">#55378F</color>
+    <color name="bili_on_accent">#FFFFFF</color>
+    <color name="bili_accent_soft">#EBE2FA</color>
+    <color name="bili_on_soft">#452776</color>
+    <color name="bili_success">#246447</color>
+    <color name="bili_error">#9D2846</color>
+    <bool name="bili_light_system_bars">true</bool>
+</resources>

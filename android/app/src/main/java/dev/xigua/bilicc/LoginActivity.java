@@ -38,15 +38,19 @@ public final class LoginActivity extends Screen {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         LinearLayout page = Ui.page(this);
-        Ui.add(page, Ui.text(this, "B 站登录", 26, Ui.TEXT, true), 0);
-        Ui.add(page, Ui.button(this, "返回", false, view -> finish()), 7);
+        LinearLayout toolbar = Ui.row(this);
+        toolbar.addView(Ui.quiet(this, "返回", view -> finish()));
+        Ui.add(page, toolbar, 0);
+        Ui.add(page, Ui.heading(this, "B 站登录", 30), 16);
         LinearLayout panel = Ui.panel(this);
-        Ui.add(panel, Ui.text(this, "使用哔哩哔哩 App 扫码并确认。只有一台手机时，可以先保存二维码，再用 B 站扫一扫的相册选项打开。", 15, Ui.MUTED, false), 0);
+        Ui.add(panel, Ui.text(this, "用哔哩哔哩 App 扫码并确认。只有一台手机时，可保存二维码，再从 B 站扫一扫的相册选项读取。", 15, Ui.MUTED, false), 0);
 
         image = new ImageView(this);
         image.setContentDescription("哔哩哔哩登录二维码");
         image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(Ui.dp(this, 224), Ui.dp(this, 224));
+        int available = getResources().getConfiguration().screenWidthDp - 72;
+        int qrSize = Ui.dp(this, Math.min(224, Math.max(0, available)));
+        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(qrSize, qrSize);
         size.gravity = Gravity.CENTER_HORIZONTAL;
         size.topMargin = Ui.dp(this, 12);
         panel.addView(image, size);
@@ -57,7 +61,7 @@ public final class LoginActivity extends Screen {
 
         actions = Ui.column(this);
         Ui.add(actions, Ui.button(this, "保存二维码到相册", true, view -> saveImage()), 0);
-        Ui.add(actions, Ui.button(this, "打开 B 站登录页", false, view -> openOfficial()), 5);
+        Ui.add(actions, Ui.quiet(this, "打开 B 站登录页", view -> openOfficial()), 5);
         Ui.add(panel, actions, 8);
         actions.setVisibility(View.GONE);
         refresh = Ui.button(this, "刷新二维码", false, view -> startLogin());
@@ -66,7 +70,7 @@ public final class LoginActivity extends Screen {
         logout = Ui.button(this, "退出本机登录", false, view -> logout());
         Ui.add(panel, logout, 8);
         logout.setVisibility(View.GONE);
-        Ui.add(page, panel, 9);
+        Ui.add(page, panel, 16);
 
         runTask(() -> app().api.call(app().settings.routes(), "/api/session", null), reply -> {
             loginRoutes = BiliClient.routesForHost(reply.route, app().settings.routes());
@@ -78,6 +82,7 @@ public final class LoginActivity extends Screen {
     private void startLogin() {
         ui.removeCallbacks(poll);
         displayQr(false);
+        status.setTextColor(getColor(Ui.TEXT));
         status.setText("正在生成登录二维码…");
         refresh.setVisibility(View.GONE);
         logout.setVisibility(View.GONE);
@@ -134,6 +139,7 @@ public final class LoginActivity extends Screen {
 
     private void signedIn(String route) {
         displayQr(false);
+        status.setTextColor(getColor(Ui.SUCCESS));
         status.setText("已登录 B 站 · " + route);
         logout.setVisibility(View.VISIBLE);
     }
@@ -143,11 +149,13 @@ public final class LoginActivity extends Screen {
         runTask(() -> app().api.call(loginRoutes, "/api/logout", new JSONObject()), reply -> {
             logout.setEnabled(true);
             logout.setVisibility(View.GONE);
+            status.setTextColor(getColor(Ui.MUTED));
             status.setText("本机已退出登录。");
             refresh.setText("重新登录");
             refresh.setVisibility(View.VISIBLE);
         }, error -> {
             logout.setEnabled(true);
+            status.setTextColor(getColor(Ui.ERROR));
             status.setText(Ui.message(error));
         });
     }
@@ -204,6 +212,7 @@ public final class LoginActivity extends Screen {
     private void showError(Exception error) {
         ui.removeCallbacks(poll);
         displayQr(false);
+        status.setTextColor(getColor(Ui.ERROR));
         status.setText(Ui.message(error));
         refresh.setVisibility(View.VISIBLE);
     }

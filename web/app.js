@@ -7,6 +7,9 @@ const details = byId("video-details");
 const title = byId("video-title");
 const part = byId("video-part");
 const subtitle = byId("subtitle");
+const placeholder = byId("reader-placeholder");
+const readerMessage = byId("reader-message");
+const reader = subtitle.closest("section");
 const copyButton = byId("copy-button");
 const srtButton = byId("srt-button");
 const status = byId("status");
@@ -67,6 +70,9 @@ function clearResult() {
   details.hidden = true;
   trackSelect.hidden = true;
   subtitle.value = "";
+  subtitle.hidden = true;
+  placeholder.hidden = false;
+  readerMessage.textContent = "提取后的字幕会显示在这里。";
   copyButton.disabled = true;
   srtButton.disabled = true;
 }
@@ -120,6 +126,8 @@ async function extract(track, shouldCopy) {
   busy = true;
   urlInput.readOnly = true;
   extractButton.disabled = true;
+  reader.setAttribute("aria-busy", "true");
+  readerMessage.textContent = "正在提取字幕…";
   setStatus("正在提取字幕…");
 
   const response = api("/api/extract", {method: "POST", body: {url: query, track}});
@@ -130,13 +138,15 @@ async function extract(track, shouldCopy) {
     if (data.status === "ok") {
       result = data;
       subtitle.value = data.text;
+      placeholder.hidden = true;
+      subtitle.hidden = false;
       copyButton.disabled = false;
       srtButton.disabled = false;
-      setStatus("已提取字幕。");
+      setStatus("已提取字幕。", "success");
       if (shouldCopy) {
         const copied = await (clipboard || copyText(data.text));
         if (number === requestNumber) {
-          setStatus(copied ? "字幕已复制到剪贴板。" : "已提取字幕。点「复制字幕」将文本复制到剪贴板。");
+          setStatus(copied ? "字幕已复制到剪贴板。" : "已提取字幕。点「复制字幕」将文本复制到剪贴板。", "success");
         }
       }
     } else {
@@ -145,21 +155,30 @@ async function extract(track, shouldCopy) {
         no_subtitle: "这条视频的当前分 P 没有可提取的字幕。",
         track_unavailable: "所选字幕轨已不可用，请选择其他字幕轨。",
       };
+      readerMessage.textContent = "当前没有可预览的字幕。";
       setStatus(messages[data.status] || "暂未获取到字幕。");
     }
   } catch (error) {
     if (error.status === "login_required") setAccount(false);
+    readerMessage.textContent = "当前没有可预览的字幕。";
     setStatus(error.message, "error");
   } finally {
     busy = false;
     urlInput.readOnly = false;
     extractButton.disabled = false;
+    reader.setAttribute("aria-busy", "false");
   }
 }
 
 form.addEventListener("submit", event => {
   event.preventDefault();
   extract(null, true);
+});
+urlInput.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.isComposing && !event.shiftKey) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
 });
 trackSelect.addEventListener("change", () => extract(trackSelect.value, true));
 urlInput.addEventListener("input", () => {
@@ -174,7 +193,7 @@ copyButton.addEventListener("click", async () => {
   const copied = await copyText(result.text);
   if (number !== requestNumber) return;
   if (copied) {
-    setStatus("字幕已复制到剪贴板。");
+    setStatus("字幕已复制到剪贴板。", "success");
   } else {
     subtitle.focus();
     subtitle.select();

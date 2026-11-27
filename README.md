@@ -29,4 +29,6 @@
 
 按[部署说明](docs/server.md)在 NAS 或 Linux 上启动 Docker Compose，配置 HTTPS 入口。用浏览器打开服务地址，确认网页能提取字幕，再把同一个 HTTPS 根地址填到 Chrome 或 Android。局域网和 Tailscale 可以同时使用，见[局域网配置](ops/lan/README.md)。
 
+开发者可查阅 [Web 与 Android 界面规范](docs/ui.md)。
+
 本仓库代码使用 [MIT 许可](LICENSE)。

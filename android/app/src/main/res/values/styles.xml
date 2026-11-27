@@ -1,12 +1,13 @@
 <resources>
-    <style name="Theme.BiliCC" parent="android:style/Theme.Material.NoActionBar">
+    <style name="Theme.BiliCC.Base" parent="android:style/Theme.Material.Light.NoActionBar" />
+    <style name="Theme.BiliCC" parent="Theme.BiliCC.Base">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#8BDCF0</item>
-        <item name="android:windowBackground">#0B121B</item>
+        <item name="android:colorAccent">@color/bili_accent</item>
+        <item name="android:windowBackground">@color/bili_canvas</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLightStatusBar">@bool/bili_light_system_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/bili_light_system_bars</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
     <style name="Theme.BiliCC.Share" parent="Theme.BiliCC">
