@@ -2,17 +2,18 @@
   <img src="web/icon-192.png" alt="Bili CC 图标" width="120">
 </p>
 
-<h1 align="center">Bili CC</h1>
+<h1 align="center">Bili CC Server</h1>
 
-<p align="center">在 B 站视频页点一下，把字幕复制出来。</p>
+<p align="center">在 NAS 上跑一套字幕服务，Chrome、Android 和网页都能用。</p>
 
 <p align="center">
   <a href="docs/server.md">部署服务</a> ·
   <a href="extension/README.md">Chrome</a> ·
-  <a href="android/README.md">Android</a>
+  <a href="android/README.md">Android</a> ·
+  <a href="https://github.com/dyxiguajun/bili-cc-extractor#在电脑上运行">在一台电脑上运行</a>
 </p>
 
-把服务部署在自己的 NAS 或 Linux 主机上。Chrome 扩展、Android 客户端和网页都能用同一台服务提取字幕。
+把服务部署在自己的 NAS 或 Linux 主机上，多个客户端可以共用这个地址。平时只在一台电脑上粘贴链接、复制字幕或下载 SRT，可以直接[启动 Bili CC Extractor 本机版](https://github.com/dyxiguajun/bili-cc-extractor#在电脑上运行)。
 
 ## 选一个入口
 
@@ -28,4 +29,4 @@
 
 按[部署说明](docs/server.md)在 NAS 或 Linux 上启动 Docker Compose，配置 HTTPS 入口。用浏览器打开服务地址，确认网页能提取字幕，再把同一个 HTTPS 根地址填到 Chrome 或 Android。局域网和 Tailscale 可以同时使用，见[局域网配置](ops/lan/README.md)。
 
-只在一台电脑上提取时，也可以用[原桌面版](https://github.com/dyxiguajun/bili-cc-extractor)。本仓库代码使用 [MIT 许可](LICENSE)。
+本仓库代码使用 [MIT 许可](LICENSE)。
