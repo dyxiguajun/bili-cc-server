@@ -1,35 +1,31 @@
-# Bili CC
+<p align="center">
+  <img src="web/icon-192.png" alt="Bili CC 图标" width="120">
+</p>
 
-在 B 站视频页点一下 Chrome 工具栏的 Bili CC 图标，字幕就会复制到剪贴板。也可以在 Android 的分享菜单里提取，或在网页上粘贴链接并下载 SRT。
+<h1 align="center">Bili CC</h1>
 
-## 选择你的用法
+<p align="center">在 B 站视频页点一下，把字幕复制出来。</p>
 
-| 设备 | 怎么用 |
+<p align="center">
+  <a href="docs/server.md">部署服务</a> ·
+  <a href="extension/README.md">Chrome</a> ·
+  <a href="android/README.md">Android</a>
+</p>
+
+把服务部署在自己的 NAS 或 Linux 主机上。Chrome 扩展、Android 客户端和网页都能用同一台服务提取字幕。
+
+## 选一个入口
+
+| 入口 | 怎么提取 |
 | --- | --- |
-| 桌面 Chrome | 点扩展图标提取当前视频。默认中文，左侧可换字幕轨，齿轮里可改服务器和默认语言。[Chrome 使用说明](extension/README.md) |
-| Android | 在 B 站点「分享 → 更多 → Bili CC 字幕」。[Android 使用说明](android/README.md) |
-| 网页 | 打开你的 NAS 服务，粘贴链接或 BV 号，点「提取并复制」。 |
+| **Chrome** | 打开 B 站视频，点工具栏里的 Bili CC 图标。提取成功后默认复制到剪贴板，可在浮窗里预览和换字幕轨。 |
+| **Android** | 在 B 站点「分享 → 更多 → Bili CC 字幕」。可以复制文本，也可以保存为 SRT。 |
+| **网页** | 打开服务地址，粘贴视频链接或 BV 号。适合临时提取或下载 SRT。 |
 
-## 自己部署
+部分字幕需要登录后才能看到。网页和 Chrome 浮窗可用哔哩哔哩 App 扫码，登录后再选择要提取的字幕轨。
 
-1. 在 NAS 或 Linux 主机准备 Docker Compose。
-2. 按部署说明填写 HTTPS 域名，启动容器并配置访问入口。
-3. 把服务的 HTTPS 根地址填入 Chrome 扩展或 Android 客户端。[NAS 部署与维护](docs/server.md)
+## 部署到 NAS
 
-同一台 NAS 可以同时提供局域网和 Tailscale 入口。[局域网 HTTPS 配置](ops/lan/README.md)
+按[部署说明](docs/server.md)在 NAS 或 Linux 上启动 Docker Compose，配置 HTTPS 入口。用浏览器打开服务地址，确认网页能提取字幕，再把同一个 HTTPS 根地址填到 Chrome 或 Android。局域网和 Tailscale 可以同时使用，见[局域网配置](ops/lan/README.md)。
 
-Chrome 和 Android 会显示当前视频有没有选定的字幕轨。B 站的部分字幕需要先在对应的客户端建立登录会话。网页端可使用哔哩哔哩 App 扫描登录二维码。
-
-## 项目目录
-
-| 目录 | 内容 |
-| --- | --- |
-| `extension/` | Chrome 扩展 |
-| `android/` | Android 客户端 |
-| `web/` | 网页客户端 |
-| `bili_cc/` | NAS 接口、字幕提取和会话管理 |
-| `docs/`、`ops/` | 部署说明与局域网配置 |
-
-XiGua · Corvallis, Oregon, USA
-
-[MIT License](LICENSE) · [原桌面版](https://github.com/dyxiguajun/bili-cc-extractor)
+只在一台电脑上提取时，也可以用[原桌面版](https://github.com/dyxiguajun/bili-cc-extractor)。本仓库代码使用 [MIT 许可](LICENSE)。
