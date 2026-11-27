@@ -20,10 +20,24 @@
 | 入口 | 怎么提取 |
 | --- | --- |
 | **Chrome** | 打开 B 站视频，点工具栏里的 Bili CC 图标。提取成功后默认复制到剪贴板，可在浮窗里预览和换字幕轨。 |
-| **Android** | 在 B 站点「分享 → 更多 → Bili CC 字幕」。可以复制文本，也可以保存为 SRT。 |
+| **Android** | 在 B 站点「分享 → 更多 → Bili CC 字幕」，直接复制中文字幕。也可以在 App 里手动提取并下载 SRT。[实机演示](#android-实机演示) |
 | **网页** | 打开服务地址，粘贴视频链接或 BV 号。适合临时提取或下载 SRT。 |
 
 部分字幕需要登录后才能看到。网页和 Chrome 浮窗可用哔哩哔哩 App 扫码，登录后再选择要提取的字幕轨。
+
+## Android 实机演示
+
+以下是 OPPO（ColorOS）手机上的实际界面。截图已隐藏服务地址、内网 IP 和附近设备信息。
+
+| 从 B 站分享 | 在 App 手动提取 | 设置主用和备用连接 |
+| :---: | :---: | :---: |
+| <a href="docs/images/android-share.jpg"><img src="docs/images/android-share.jpg" width="220" alt="ColorOS 分享文本面板中的 Bili CC 字幕入口"></a> | <a href="docs/images/android-extract.jpg"><img src="docs/images/android-extract.jpg" width="220" alt="Bili CC 首页的提取并复制按钮和字幕预览区"></a> | <a href="docs/images/android-connections.jpg"><img src="docs/images/android-connections.jpg" width="220" alt="连接设置中的局域网主用连接和 Tailscale 备用连接，地址已隐藏"></a> |
+
+- **从 B 站分享**。在视频页点「分享 → 更多」，再选系统分享面板里的「Bili CC 字幕」。有可提取的中文字幕时，App 会复制到剪贴板，并用系统提示显示「中文字幕已复制」。
+- **手动提取**。在首页粘贴 B 站视频链接、短链接或 BV 号，点「提取并复制」。提取后可以在下方预览、再次复制或下载 SRT。遇到需要登录的视频，先点右上角「B 站登录」。
+- **连接设置**。在首页点「设置」。图中把「局域网」放在第一条，把「Tailscale」作为备用。逐条点「测试连接」，确认可达后点「保存」。主用不可达时，App 会依序尝试备用连接。
+
+[Android 安装与配置说明](android/README.md)
 
 ## 部署到 NAS
 
